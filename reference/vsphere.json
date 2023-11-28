@@ -1,0 +1,16 @@
+{
+    "cluster": "SA-Cluster-01",
+    "convert_to_template": "false",
+    "create_snapshot": "true",
+    "datacenter": "SA-Datacenter",
+    "datastore": "SA-Shared-01",
+    "folder": "tkg-vms",
+    "insecure_connection": "true",
+    "linked_clone": "true",
+    "network": "pg-SA-Management",
+    "password": "VMware1!",
+    "resource_pool": "rp-tkg-management",
+    "template": "ubuntu-2004",
+    "username": "administrator@vsphere.local",
+    "vcenter_server": "sa-vcsa-01.vclass.local"
+}

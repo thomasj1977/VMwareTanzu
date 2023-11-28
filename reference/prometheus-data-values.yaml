@@ -1,0 +1,28 @@
+#@data/values
+#@overlay/match-child-defaults missing_ok=True
+---
+monitoring:
+  prometheus_server:
+    image:
+      repository: harbor.vclass.local/tkg/prometheus
+  alertmanager:
+    image:
+      repository: harbor.vclass.local/tkg/prometheus
+  kube_state_metrics:
+    image:
+      repository: harbor.vclass.local/tkg/prometheus
+  node_exporter:
+    image:
+      repository: harbor.vclass.local/tkg/prometheus
+  pushgateway:
+    image:
+      repository: harbor.vclass.local/tkg/prometheus
+  cadvisor:
+    image:
+      repository: harbor.vclass.local/tkg/prometheus
+  prometheus_server_configmap_reload:
+    image:
+      repository: harbor.vclass.local/tkg/prometheus
+  prometheus_server_init_container:
+    image:
+      repository: harbor.vclass.local/tkg/prometheus

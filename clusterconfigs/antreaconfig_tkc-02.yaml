@@ -1,0 +1,17 @@
+apiVersion: cni.tanzu.vmware.com/v1alpha1
+kind: AntreaConfig
+metadata:
+  name: tkc-02-antrea-package
+  namespace: tkg-workload-ns
+spec:
+  antrea:
+    config:
+      featureGates:
+        AntreaPolicy: true
+        AntreaProxy: true
+        AntreaTraceflow: true
+        Egress: false
+        EndpointSlice: true
+        FlowExporter: false
+        NetworkPolicyStats: false
+        NodePortLocal: true

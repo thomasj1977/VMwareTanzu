@@ -1,0 +1,41 @@
+replicaCount: 1
+
+image:
+  repository: projects.registry.vmware.com/ako/ako
+  pullPolicy: IfNotPresent
+
+AKOSettings:
+  primaryInstance: true
+  enableEvents: 'true'
+  logLevel: DEBUG
+  apiServerPort: 8080
+  clusterName: tkc-02
+  cniPlugin: 'antrea'
+
+NetworkSettings:
+  vipNetworkList:
+    - networkName: pg-sa-tkg-management
+      cidr: 172.20.11.0/24
+
+L7Settings:
+  defaultIngController: 'true'
+  serviceType: NodePortLocal # enum NodePort|ClusterIP|NodePortLocal
+
+ControllerSettings:
+  serviceEngineGroupName: Default-Group   
+  cloudName: Default-Cloud   
+  controllerHost: '172.20.10.58' 
+  tenantName: admin
+
+resources:
+  limits:
+    cpu: 350m
+    memory: 400Mi
+  requests:
+    cpu: 200m
+    memory: 300Mi
+
+persistentVolumeClaim: ''
+mountPath: /log
+logFile: avi.log
+

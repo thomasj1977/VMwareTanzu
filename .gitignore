@@ -1,0 +1,4 @@
+*.ovf
+*.vmdk
+*.tar.gz
+*.zip

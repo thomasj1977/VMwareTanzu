@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vmbeans-local
+spec:
+  selector:
+    matchLabels:
+      app: vmbeans
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: vmbeans
+    spec:
+      containers:
+        - name: vmbeans-local
+          image: harbor.tkg.vclass.local/my_project/vmbeans-website
+          ports:
+            - containerPort: 80

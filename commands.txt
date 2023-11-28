@@ -1,0 +1,426 @@
+VMware Tanzu Kubernetes Grid: Install Configure Manage [v2.0]
+
+# Lab 1: Installing Kubernetes CLI Tools for vSphere and the Tanzu CLI
+
+## Task 2: Install Kubernetes CLI Tools for vSphere
+cd ~/workspace
+unzip vsphere-plugin.zip
+sudo install -v ~/workspace/bin/* /usr/local/bin/
+kubectl version --short --client=true
+kubectl vsphere version
+
+## Task 3: Enable Kubernetes CLI Autocompletion
+echo 'source <(kubectl completion bash)' >> ~/.bash_profile
+source ~/.bash_profile
+
+## Task 4: Install the Tanzu CLI and Plug-Ins
+cd ~/workspace
+tar -xvf tanzu-cli-bundle-linux-amd64.tar.gz
+sudo install ~/workspace/cli/core/v0.25.0/tanzu-core-linux_amd64 /usr/local/bin/tanzu
+tanzu version
+tanzu plugin list
+tanzu init
+tanzu plugin list
+
+## Task 5: Enable Tanzu CLI Autocompletion
+echo 'source <(tanzu completion bash)' >> ~/.bash_profile
+source ~/.bash_profile
+
+
+# Lab 3: Enabling a One-Zone Supervisor with vSphere Networking
+
+## Task 6: Log In to the Supervisor with Tanzu CLI
+kubectl vsphere login --server=https://<SUPERVISOR_IP> --insecure-skip-tls-verify
+kubectl config use-context <SUPERVISOR_IP>
+/home/student01/.kube/config
+
+
+# Lab 5: Deploying a Tanzu Kubernetes Grid Workload Cluster
+
+## Task 3: Create a Tanzu Kubernetes Grid Workload Cluster Configuration File
+cd ~/workspace/clusterconfigs
+cp tanzuclassycluster.yaml tkc-01.yaml
+code tkc-01.yaml
+checkconfig tkc-01.yaml
+
+## Task 4: Create a Tanzu Kubernetes Grid Workload Cluster
+cd ~/workspace/clusterconfigs
+tanzu login
+tanzu cluster create -f tkc-01.yaml --dry-run
+tanzu cluster create -f tkc-01.yaml
+tanzu cluster list
+
+
+# Lab 6: Managing a Tanzu Kubernetes Grid Workload Cluster
+
+## Task 2: Examine the Tanzu Kubernetes Grid Workload Cluster
+kubectl vsphere login --vsphere-username administrator@vsphere.local --server=https://<SUPERVISOR_IP> --insecure-skip-tls-verify
+tanzu login
+kubectl config get-contexts
+tanzu cluster kubeconfig get tkc-01 --namespace=tkg-workload-ns --admin
+kubectl config get-contexts
+kubectl config use-context tkc-01-admin@tkc-01
+kubectl get pods -A
+kubectl get packageinstalls -A
+kubectl get nodes
+
+## Task 3: Allow Privileged Workload Deployment
+cd ~/workspace
+kubectl apply -f allow-runasroot-clusterrole.yml
+
+## Task 4: Scale the Tanzu Kubernetes Grid Workload Cluster
+tanzu cluster list
+tanzu cluster scale tkc-01 -n tkg-workload-ns --worker-machine-count 2
+tanzu cluster list
+kubectl config use-context <SUPERVISOR_IP>
+kubectl get machines -n tkg-workload-ns --watch
+tanzu cluster list
+
+
+# Lab 7: Examining the Tanzu Package CLI Plug-In and Adding a Package Repository
+
+## Task 2: Add a Package Repository
+kubectl vsphere login --vsphere-username administrator@vsphere.local --server=https://<SUPERVISOR_IP> --insecure-skip-tls-verify
+tanzu cluster list -n tkg-workload-ns
+tanzu cluster kubeconfig get tkc-01 --namespace=tkg-workload-ns --admin
+kubectl config use-context tkc-01-admin@tkc-01
+tanzu package repository list -A
+tanzu package repository add tanzu-standard --url projects.registry.vmware.com/tkg/packages/standard/repo:v1.6.0 -n tkg-system
+tanzu package repository list -A
+
+## Task 3: Examine Packages in the Cluster
+tanzu cluster kubeconfig get tkc-01 --namespace=tkg-workload-ns --admin
+kubectl config use-context tkc-01-admin@tkc-01
+tanzu package available list
+tanzu package installed list -A
+tanzu package available get harbor.tanzu.vmware.com
+tanzu package available list harbor.tanzu.vmware.com
+
+
+# Lab 8: Deploying cert-manager
+
+## Task 2: Deploy cert-manager
+kubectl vsphere login --vsphere-username administrator@vsphere.local --server=https://<SUPERVISOR_IP> --insecure-skip-tls-verify
+kubectl config use-context tkc-01-admin@tkc-01
+tanzu package available list cert-manager.tanzu.vmware.com
+tanzu package install cert-manager -p cert-manager.tanzu.vmware.com --version <LATEST_VERSION> -n tkc-01-packages --create-namespace
+tanzu package installed list -n tkc-01-packages
+kapp inspect --app cert-manager.app -n tkc-01-packages
+kubectl get pods -n cert-manager
+
+
+# Lab 09: Deploying Contour and ExternalDNS
+
+## Task 2: Deploy Contour
+kubectl vsphere login --vsphere-username administrator@vsphere.local --server=https://<SUPERVISOR_IP> --insecure-skip-tls-verify
+kubectl config use-context tkc-01-admin@tkc-01
+tanzu package available list contour.tanzu.vmware.com
+cd ~/workspace/packages/contour
+tanzu package install contour --package-name contour.tanzu.vmware.com --version <LATEST_VERSION> --values-file contour-data-values.yaml --namespace tkc-01-packages
+tanzu package installed list -n tkc-01-packages
+kapp inspect --app contour.app -n tkc-01-packages
+kubectl get deployments,pods,services -n tanzu-system-ingress
+
+## Task 3: Retrieve the Secret Key for DNS Updates
+cat /etc/bind/named.conf.local
+
+## Task 4: Configure External DNS
+cd ~/workspace/packages/external-dns
+code external-dns-data-values.yaml
+checkconfig external-dns-data-values.yaml
+
+## Task 5: Deploy External DNS
+kubectl vsphere login --vsphere-username administrator@vsphere.local --server=https://<SUPERVISOR_IP> --insecure-skip-tls-verify
+kubectl config use-context tkc-01-admin@tkc-01
+tanzu package available list external-dns.tanzu.vmware.com
+cd ~/workspace/packages/external-dns/
+tanzu package install external-dns --package-name external-dns.tanzu.vmware.com --version <LATEST_VERSION> --values-file external-dns-data-values.yaml --namespace tkc-01-packages
+tanzu package installed list -n tkc-01-packages
+kapp inspect --app external-dns.app -n tkc-01-packages
+kubectl get pods -n tanzu-system-service-discovery
+
+## Task 6: Deploy an HTTPProxy Application
+cd ~/workspace/packages/contour
+cat vmbeans-contour.yaml
+kubectl apply -f vmbeans-contour.yaml
+kubectl get pods,deployment,service,httpproxy
+
+## Task 7: Review the DAG for the Deployed HTTPProxy Application
+CONTOUR_POD=$(kubectl -n tanzu-system-ingress get pod -l app=contour -o name | head -1)
+kubectl -n tanzu-system-ingress port-forward $CONTOUR_POD 6060 &
+curl localhost:6060/debug/dag | dot -T png > ~/workspace/packages/contour/contour-dag.png
+xdg-open ~/workspace/packages/contour/contour-dag.png
+kill %1
+
+
+# Lab 10: Deploying Multus
+
+## Task 2: Deploy Multus
+kubectl vsphere login --vsphere-username administrator@vsphere.local --server=https://<SUPERVISOR_IP> --insecure-skip-tls-verify
+kubectl config use-context tkc-01-admin@tkc-01
+tanzu package available list multus-cni.tanzu.vmware.com
+tanzu package install multus-cni --package-name multus-cni.tanzu.vmware.com --version <LATEST_VERSION> --namespace tkc-01-packages
+tanzu package installed list -n tkc-01-packages
+kapp inspect --app multus-cni.app -n tkc-01-packages
+kubectl get pods -n kube-system
+
+## Task 3: Deploy a Pod with Multiple Network Interfaces
+cd ~/workspace/packages/multus-cni
+cat multus-cni-crd.yaml
+kubectl apply -f multus-cni-crd.yaml
+cat my-multi-cni-pod.yaml
+kubectl apply  -f my-multi-cni-pod.yaml
+kubectl describe pod sample-pod
+kubectl exec sample-pod -- ip a
+
+
+# Lab 11: Deploying Fluent Bit
+
+## Task 2: Configure Fluent Bit
+cd ~/workspace/packages/fluent-bit
+code fluent-bit-data-values.yaml
+checkconfig fluent-bit-data-values.yaml
+
+## Task 3: Deploy Fluent Bit
+kubectl vsphere login --vsphere-username administrator@vsphere.local --server=https://<SUPERVISOR_IP> --insecure-skip-tls-verify
+kubectl config use-context tkc-01-admin@tkc-01
+tanzu package available list fluent-bit.tanzu.vmware.com
+cd ~/workspace/packages/fluent-bit
+tanzu package install fluent-bit --package-name fluent-bit.tanzu.vmware.com --version <LATEST_VERSION> --values-file fluent-bit-data-values.yaml -n tkc-01-packages
+tanzu package installed list -n tkc-01-packages
+kapp inspect --app fluent-bit.app -n tkc-01-packages
+kubectl get pods -n tanzu-system-logging
+
+
+# Lab 12: Deploying Prometheus and Grafana
+
+## Task 2: Deploy Prometheus
+kubectl vsphere login --vsphere-username administrator@vsphere.local --server=https://<SUPERVISOR_IP> --insecure-skip-tls-verify
+kubectl config use-context tkc-01-admin@tkc-01
+tanzu package available list prometheus.tanzu.vmware.com
+cd ~/workspace/packages/prometheus
+tanzu package install prometheus --package-name prometheus.tanzu.vmware.com --version <LATEST_VERSION> --values-file prometheus-default-values.yaml --namespace tkc-01-packages
+kubectl create secret generic alertmanager-overlay -n tkc-01-packages -o yaml --dry-run=client --from-file=overlay-alertmanager.yaml | kubectl apply -f -
+kubectl annotate PackageInstall prometheus -n tkc-01-packages ext.packaging.carvel.dev/ytt-paths-from-secret-name.1=alertmanager-overlay
+tanzu package installed list -n tkc-01-packages
+kapp inspect --app prometheus.app -n tkc-01-packages
+kubectl get pods -n tanzu-system-monitoring
+
+## Task 3: Configure Grafana
+cd ~/workspace/packages/grafana
+echo -n "VMware1!" | base64
+code grafana-data-values.yaml
+checkconfig grafana-data-values.yaml
+
+## Task 4: Deploy Grafana
+kubectl vsphere login --vsphere-username administrator@vsphere.local --server=https://<SUPERVISOR_IP> --insecure-skip-tls-verify
+kubectl config use-context tkc-01-admin@tkc-01
+tanzu package available list grafana.tanzu.vmware.com
+cd ~/workspace/packages/grafana
+tanzu package install grafana --package-name grafana.tanzu.vmware.com --version <LATEST_VERSION> --values-file grafana-data-values.yaml --namespace tkc-01-packagestanzu package installed list -n tkc-01-packages
+tanzu package installed list -n tkc-01-packages
+kapp inspect --app grafana.app -n tkc-01-packages
+kubectl get pods -n tanzu-system-dashboards
+
+
+# Lab 13: Deploying Harbor
+
+## Task 2: Configure Harbor
+cd ~/workspace/packages/harbor
+code harbor-data-values.yaml
+checkconfig harbor-data-values.yaml
+
+## Task 3: Deploy Harbor
+kubectl vsphere login --vsphere-username administrator@vsphere.local --server=https://<SUPERVISOR_IP> --insecure-skip-tls-verify
+kubectl config use-context tkc-01-admin@tkc-01
+tanzu package available list harbor.tanzu.vmware.com
+cd ~/workspace/packages/harbor
+tanzu package install harbor --package-name harbor.tanzu.vmware.com --version <LATEST_VERSION> --values-file harbor-data-values.yaml --namespace tkc-01-packages
+tanzu package installed list -n tkc-01-packages
+kapp inspect --app harbor.app -n tkc-01-packages
+kubectl get pods -n tanzu-system-registry
+
+## Task 4: Access and Prepare Harbor
+sudo mkdir /etc/docker/certs.d/harbor.tkg.vclass.local
+sudo cp ~/Downloads/ca.crt /etc/docker/certs.d/harbor.tkg.vclass.local
+docker login harbor.tkg.vclass.local
+
+## Task 5: Push an Image to Harbor
+docker tag projects.registry.vmware.com/vclass/vmbeans-website harbor.tkg.vclass.local/my_project/vmbeans-website
+docker push harbor.tkg.vclass.local/my_project/vmbeans-website
+
+## Task 6: Provide the Harbor Registry Certificate to a Workload Cluster
+cd ~/workspace/packages/harbor
+code harborcertinject.yaml
+less /etc/docker/certs.d/harbor.tkg.vclass.local/ca.crt
+kubectl config use-context tkc-01-admin@tkc-01
+kubectl apply -f ~/workspace/packages/harbor/harborcertinject.yaml
+
+## Task 7: Test the Harbor Repository
+kubectl config use-context tkc-01-admin@tkc-01
+cd ~/workspace/packages/harbor
+kubectl apply -f vmbeans-harbor.yaml
+kubectl get pods
+
+
+# Lab 14: Providing Access to a Developer and Deploying a Workload
+
+## Task 3: Create a Namespace for the Developer
+kubectl vsphere login --vsphere-username administrator@vsphere.local --server=https://<SUPERVISOR_IP> --insecure-skip-tls-verify
+kubectl config use-context tkc-01-admin@tkc-01
+kubectl create ns dev-namespace
+kubectl get ns
+
+## Task 4: Create a Role Binding for the Developer's vSphere User Account
+cd ~/workspace/access
+code developer_01_rolebinding.yaml
+checkconfig developer_01_rolebinding.yaml
+kubectl apply -f ~/workspace/access/developer_01_rolebinding.yaml
+
+## Task 5: Test Permissions for the Developer
+kubectl vsphere logout
+~/workspace/clean-contexts.sh
+kubectl vsphere login --vsphere-username developer_01@vsphere.local --server=https://<SUPERVISOR_IP> --tanzu-kubernetes-cluster-name tkc-01 --tanzu-kubernetes-cluster-namespace tkg-workload-ns --insecure-skip-tls-verify
+kubectl config use-context tkc-01
+kubectl get all -A
+kubectl get ns
+kubectl get all -n dev-namespace
+
+## Task 6: Deploy a Workload as a Developer
+cd ~/workspace/access
+kubectl apply -f vmbeans-access.yaml
+kubectl apply -f vmbeans-access.yaml -n dev-namespace
+kubectl get all -n dev-namespace
+kubectl vsphere logout
+~/workspace/clean-contexts.sh
+
+
+# Lab 15: Using Ingress and NodePortLocal to Deploy an Application
+
+## Task 2: Create an AntreaConfig to Enable NodePortLocal
+kubectl vsphere login --vsphere-username administrator@vsphere.local --server=https://<SUPERVISOR_IP> --insecure-skip-tls-verify
+tanzu login
+kubectl config use-context <SUPERVISOR_IP>
+kubectl describe antreaconfigs -n tkg-workload-ns tkc-01-antrea-package
+cd ~/workspace/clusterconfigs
+cat antreaconfig_tkc-02.yaml
+kubectl apply -f antreaconfig_tkc-02.yaml
+
+## Task 3: Create a Tanzu Kubernetes Grid Workload Cluster and verify that NodePortLocal is enabled for antrea
+cd ~/workspace/clusterconfigs
+cat tkc-02.yaml
+tanzu cluster create -f tkc-02.yaml
+tanzu cluster kubeconfig get tkc-02 --namespace=tkg-workload-ns --admin
+kubectl config use-context tkc-02-admin@tkc-02
+kubectl get configmap -n kube-system | grep "antrea-config"
+kubectl describe cm <antrea-config-XXXX> -n kube-system | grep NodePortLocal
+kubectl apply -f ~/workspace/allow-runasroot-clusterrole.yml
+
+## Task 4: Deploy the NSX Advanced Load Balancer AKO component in the Workload Cluster
+kubectl create namespace avi-system
+cd ~/workspace/nsx-alb
+cat ako-values.yaml
+helm install ako/ako --generate-name --version 1.8.2 -f ako-values.yaml --set ControllerSettings.controllerHost=sa-nsxlb-01.vclass.local --set avicredentials.username=admin --set avicredentials.password="VMware1!" --namespace=avi-system
+helm install --generate-name oci://projects.registry.vmware.com/ako/helm-charts/ako --version 1.8.2 -f ~/workspace/nsx-alb/ako-values.yaml --set ControllerSettings.controllerHost=sa-nsxlb-01.vclass.local --set avicredentials.username=admin --set avicredentials.password="VMware1!" --namespace=avi-system
+helm list -n avi-system
+
+## Task 5: Deploy cert-manager and External DNS
+tanzu package repository add tanzu-standard --url projects.registry.vmware.com/tkg/packages/standard/repo:v1.6.0 -n tkg-system
+tanzu package install cert-manager -p cert-manager.tanzu.vmware.com --version 1.5.3+vmware.2-tkg.1 -n tkc-02-packages --create-namespace
+tanzu package install external-dns --package-name external-dns.tanzu.vmware.com --version 0.11.0+vmware.1-tkg.2 --values-file ~/workspace/nsx-alb/external-dns-data-values-tkc-02.yaml -n tkc-02-packages
+
+## Task 6: Deploy an Ingress Application
+cd ~/workspace/nsx-alb
+cat vmbeans-npl.yaml 
+kubectl apply -f vmbeans-npl.yaml
+kubectl get pods,deployment,service,ingress
+kubectl describe pods | less
+
+
+# Lab 17: Backup and Restore
+
+## Task 2: Create a Backup Credential
+cd ~/workspace/backup
+code credentials-minio
+
+[default]
+aws_access_key_id = admin
+aws_secret_access_key = VMware1!
+
+checkconfig credentials-minio
+
+## Task 3: Install Velero
+kubectl vsphere login --vsphere-username administrator@vsphere.local --server=https://<SUPERVISOR_IP> --insecure-skip-tls-verify
+tanzu cluster list -n tkg-workload-ns
+tanzu cluster kubeconfig get tkc-01 --namespace=tkg-workload-ns --admin
+kubectl config use-context tkc-01-admin@tkc-01
+cd ~/workspace/backup
+gunzip velero-linux-v1.8.1+vmware.1.gz
+sudo install velero-linux-v1.8.1+vmware.1 /usr/local/bin/velero
+velero version --client-only
+velero install --provider aws --plugins velero/velero-plugin-for-aws:v1.4.0 --bucket velero --secret-file ~/workspace/backup/credentials-minio --use-volume-snapshots=false --use-restic --backup-location-config region=local-backup,s3ForcePathStyle="true",s3Url=http://172.20.11.201:9000
+kubectl get all -n velero
+
+## Task 4: Deploy an Application
+kubectl vsphere login --vsphere-username administrator@vsphere.local --server=https://<SUPERVISOR_IP> --insecure-skip-tls-verify
+tanzu login
+cd ~/workspace/backup
+kubectl apply -f vmbeans-backup.yaml
+kubectl get all -n vmbeans-backup
+
+## Task 5: Create a backup
+velero backup create vmbeans-ns --include-namespaces vmbeans-backup
+velero backup describe vmbeans-ns
+
+## Task 6: Simulate an Incident
+~/workspace/backup/disaster.sh
+kubectl get all -n vmbeans-backup
+
+## Task 7: Restore from Backup
+velero restore create --from-backup vmbeans-ns
+kubectl get all -n vmbeans-backup
+
+
+# Lab 19: Performing Basic Troubleshooting
+
+## Task 3: Examine Cluster API Logs
+kubectl vsphere login --vsphere-username administrator@vsphere.local --server=https://<SUPERVISOR_IP> --insecure-skip-tls-verify
+tanzu login
+kubectl config use-context <SUPERVISOR_IP>
+CAPI_CONTROLLER_POD=$(kubectl -n vmware-system-capw get pod -l name=capw-controller-manager --field-selector=status.phase=Running -o name)
+kubectl logs -n vmware-system-capw -c manager $CAPI_CONTROLLER_POD
+CAPV_CONTROLLER_POD=$(kubectl -n vmware-system-capw get pod -l name=capv-controller-manager --field-selector=status.phase=Running -o name)
+kubectl logs -n vmware-system-capw -c manager $CAPV_CONTROLLER_POD
+
+## Task 4: Inspect the Health of the Tanzu Kubernetes Grid Components on the Supervisor
+kubectl get pods -A | grep -v Running
+kubectl describe pod <POD_NAME> -n <NAMESPACE>
+
+## Task 5:  Use SSH to Connect to a Tanzu Kubernetes Grid Node
+kubectl get secrets -n tkg-workload-ns | grep "tkc-01-ssh-password"
+kubectl get secrets tkc-01-ssh-password -n tkg-workload-ns -o yaml | grep "ssh-passwordkey"
+echo <SSH-PASSWORDKEY> | base64 --decode
+kubectl get vspheremachines -n tkg-workload-ns -l cluster.x-k8s.io/cluster-name=tkc-01 -o wide
+ssh vmware-system-user@<IPADDR>
+
+
+# Lab 20: Troubleshooting Package Installations
+
+## Task 2: Deploy Fluent Bit
+kubectl vsphere login --vsphere-username administrator@vsphere.local --server=https://<SUPERVISOR_IP> --insecure-skip-tls-verify
+tanzu login
+kubectl config use-context tkc-02-admin@tkc-02
+cd ~/workspace/packages/fluent-bit
+tanzu package install fluent-bit --package-name fluent-bit.tanzu.vmware.com --version <LATEST-VERSION> --values-file fluent-bit-data-values-tkc-02.yaml -n tkc-02-packages
+tanzu package installed list -n tkc-02-packages
+kapp inspect --app fluent-bit.app -n tkc-02-packages
+
+## Task 3: Troubleshoot Fluent Bit Package Installation
+kubectl get daemonset,pods -n tanzu-system-logging
+kubectl logs daemonset/fluent-bit -n tanzu-system-logging
+kubectl get configmap -n tanzu-system-logging fluent-bit-config -o yaml | grep "outputs.conf:" -A 3
+code ~/workspace/packages/fluent-bit/fluent-bit-data-values-tkc-02.yaml
+tanzu package installed update fluent-bit -n tkc-02-packages --values-file fluent-bit-data-values-tkc-02.yaml
+tanzu package installed list -n tkc-02-packages
+kubectl get all -n tanzu-system-logging
+kapp inspect --app fluent-bit.app -n tkc-02-packages

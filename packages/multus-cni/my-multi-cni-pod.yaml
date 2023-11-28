@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: sample-pod
+  annotations:
+    k8s.v1.cni.cncf.io/networks: macvlan-conf
+spec:
+  containers:
+  - name: sample-pod
+    command: ["/bin/sh", "-c", "trap : TERM INT; sleep infinity & wait"]
+    image: projects.registry.vmware.com/vclass/alpine

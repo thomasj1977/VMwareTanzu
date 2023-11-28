@@ -1,0 +1,54 @@
+# ######################################################
+# Crashd script argument file
+#
+# This file defines CLI argument values that are passed
+# Crashd when running scripts for troubleshooting TKG
+# clusters.
+# ######################################################
+
+# target: specifies cluster to target.
+# Valid targets are: {bootstrap, mgmt, workload}
+target=mgmt
+
+# infra: the underlying infrastructure used by the TKG cluster.
+# Valid values are: {vsphere, aws, azure}
+infra=vsphere
+
+# workdir: a local directory where collected files are staged.
+workdir=./workdir
+
+# ######################################################
+# Management Cluster
+# The following arguments are used to collect information
+# from a named management cluster.
+# ######################################################
+
+# ssh_user: the user ID used for SSH connections to cluster nodes.
+ssh_user=capv
+
+# ssh_pk_file: the path to the private key file created to SSH
+# into management cluster nodes.
+ssh_pk_file=~/.ssh/id_rsa
+
+# mgmt_cluster_ns: the namespace where the management cluster
+# is deployed in the cluster.
+mgmt_cluster_ns=tkg-system
+
+# mgmt_cluster_config: the kubeconfig file path for the management cluster.
+mgmt_cluster_config=~/.kube-tkg/config
+
+# ######################################################
+# Workload Cluster
+# The following arguments are used to collect information
+# from one or more workload clusters that are managed
+# by the management cluster configured above.
+# ######################################################
+
+# workload_clusters: a comma separated list of workload cluster names
+# [uncomment below]
+workload_clusters=tkc-01
+
+# workload_cluster_ns: the namespace where the workload cluster
+# is hosted in the management plane.
+# [uncomment below]
+workload_cluster_ns=default

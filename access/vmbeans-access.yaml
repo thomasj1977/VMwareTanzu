@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vmbeans-access-deployment
+spec:
+  selector:
+    matchLabels:
+      app: vmbeans-access
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: vmbeans-access
+    spec:
+      containers:
+        - name: vmbeans-access
+          image: projects.registry.vmware.com/vclass/vmbeans-website:v1.1
+          ports:
+            - containerPort: 80
