@@ -33,7 +33,7 @@ grafana:
       datasources:
         - name: Prometheus
           type: prometheus
-          url: 
+          url: prometheus-server.tanzu-system-monitoring.svc.cluster.local
           access: proxy
           isDefault: true
     dashboardProvider_yaml: |-
@@ -58,10 +58,10 @@ grafana:
   secret:
     type: "Opaque"
     admin_user: "YWRtaW4="
-    admin_password: ""
+    admin_password: "Vk13YXJlMSE="
 ingress:
   enabled: true
-  virtual_host_fqdn: ""
+  virtual_host_fqdn: "grafana.tkg.vclass.local"
   prefix: "/"
   servicePort: 80
   tlsCertificate:

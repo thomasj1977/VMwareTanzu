@@ -14,10 +14,10 @@ fluent_bit:
       [OUTPUT]
         Name   syslog
         Match  kube.*
-        Host   
-        Port   
-        Mode   
-        Syslog_Format        
+        Host   sa-loginsight-01.vclass.local
+        Port   514
+        Mode   tcp
+        Syslog_Format        rfc5424
         Syslog_Hostname_key  tkg_cluster
         Syslog_Appname_key   pod_name
         Syslog_Procid_key    container_name

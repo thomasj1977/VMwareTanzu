@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Namespace
+metadata: 
+  name: vmbeans-backup
+  labels:
+    name: vmbeans-backup
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vmbeans-backup-deployment
+  namespace: vmbeans-backup
+spec:
+  selector:
+    matchLabels:
+      app: vmbeans-backup
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: vmbeans-backup
+    spec:
+      containers:
+        - name: vmbeans-backup
+          image: projects.registry.vmware.com/vclass/vmbeans-website:v1.1
+          ports:
+            - containerPort: 80

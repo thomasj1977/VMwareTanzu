@@ -1,5 +1,5 @@
 namespace: tanzu-system-registry
-hostname: 
+hostname: harbor.tkg.vclass.local
 port:
   https: 443
 logLevel: info
@@ -13,7 +13,7 @@ enableContourHttpProxy: true
 contourHttpProxy:
   timeout: 0s
   idleTimeout: 5m
-harborAdminPassword: 
+harborAdminPassword: VMware1!
 secretKey: 12gWc8WoknuTIaoa
 database:
   password: zBcu9A00etZorVLl
