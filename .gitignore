@@ -1,6 +1,7 @@
 *.ovf
 *.vmdk
 *.tar.gz
+*.gz
 *.zip
 backup/*
 bin/*
