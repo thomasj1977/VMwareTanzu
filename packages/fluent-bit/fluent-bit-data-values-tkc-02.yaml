@@ -15,7 +15,7 @@ fluent_bit:
         Name   syslog
         Match  kube.*
         Host   sa-loginsight-01.vclass.local
-        Port   
+        Port   514
         Mode   tcp
         Syslog_Format        rfc5424
         Syslog_Hostname_key  tkg_cluster
